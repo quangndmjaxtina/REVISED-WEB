@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đấu trường kiến thức</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{--bg:#f6f5ff;--card:#fff;--tx:#1c1b2e;--mu:#6b6a80;--pr:#5b4bdb;--prt:#fff;--ok:#16a34a;--okb:#dcfce7;--no:#dc2626;--nob:#fee2e2;--bd:#e3e1f5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14132a;--card:#1f1e3a;--tx:#f0efff;--mu:#a3a1c4;--pr:#8b7dff;--prt:#14132a;--ok:#4ade80;--okb:#12341f;--no:#f87171;--nob:#3b1620;--bd:#34325c;color-scheme:dark}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:20px;margin:0 0 12px}.mu{color:var(--mu);font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px;margin:14px 0}
+label{display:block;font-weight:600;margin:12px 0 6px;font-size:14px}
+input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:120px;resize:vertical}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:11px 18px;background:var(--pr);color:var(--prt);font-weight:600}
+button.ghost{background:transparent;color:var(--pr);border:1px solid var(--bd)}button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1 1 140px}
+.checks label{display:inline-flex;gap:6px;align-items:center;margin:4px 14px 4px 0;font-weight:500}.checks input{width:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bar{height:10px;background:var(--bd);border-radius:6px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;background:var(--pr);transition:width .25s linear}
+.bar.low i{background:var(--no)}
+.q{font-size:21px;font-weight:700;margin:10px 0 16px}
+.opt{display:block;width:100%;text-align:left;margin:8px 0;background:var(--bg);color:var(--tx);border:2px solid var(--bd);padding:14px}
+.opt:hover:not(:disabled){border-color:var(--pr)}.opt.ok{background:var(--okb);border-color:var(--ok)}.opt.no{background:var(--nob);border-color:var(--no)}
+.tf{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tag{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:var(--bd);color:var(--mu)}
+.rv{border-left:5px solid var(--bd);padding:8px 12px;margin:10px 0;border-radius:6px;background:var(--bg)}.rv.ok{border-color:var(--ok)}.rv.no{border-color:var(--no)}
+table{width:100%;border-collapse:collapse}td,th{padding:8px 6px;text-align:left;border-bottom:1px solid var(--bd)}
+.hide{display:none}.msg{padding:10px;border-radius:10px;background:var(--nob);color:var(--no);margin-top:10px}
+.big{font-size:44px;font-weight:800;color:var(--pr)}
+.qr{background:#fff;padding:12px;border-radius:12px;display:inline-block;max-width:280px;width:100%}.qr svg{width:100%;height:auto;display:block}
+.code{font-size:40px;font-weight:800;letter-spacing:6px;color:var(--pr)}.chips span{display:inline-block;background:var(--bd);border-radius:99px;padding:3px 12px;margin:3px}
+.ctr{text-align:center}
+</style>
+</head>
+<body>
+<main>
+<h1>🎯 Đấu trường kiến thức</h1>
+<p class="mu">Tải tài liệu (ảnh, Word) → tạo trò chơi kiểm tra từ vựng và ngữ pháp → cả lớp cùng chơi.</p>
+
+<section id="s-setup">
+ <div class="card">
+  <h2>1. Dữ liệu bài học</h2>
+  <label>Tệp Word (.docx) và/hoặc ảnh (chụp trang sách, bảng từ vựng…)</label>
+  <input id="files" type="file" accept=".docx,image/*" multiple>
+  <label>Hoặc dán / gõ nội dung trực tiếp</label>
+  <textarea id="txt" placeholder="Ví dụ: apple = quả táo; Thì hiện tại đơn: S + V(s/es)…"></textarea>
+  <div id="fl" class="mu"></div>
+ </div>
+ <div class="card">
+  <h2>2. Cài đặt trò chơi</h2>
+  <div class="row">
+   <div><label>Số câu hỏi</label><input id="n" type="number" min="3" max="40" value="10"></div>
+   <div><label>Thời gian mỗi câu (giây)</label><input id="sec" type="number" min="5" max="300" value="20"></div>
+  </div>
+  <label>Dạng câu hỏi</label>
+  <div class="checks"><label><input type="checkbox" id="k-mc" checked> Trắc nghiệm</label><label><input type="checkbox" id="k-tf" checked> Đúng / Sai</label><label><input type="checkbox" id="k-fill" checked> Điền từ</label></div>
+  <label>API key Anthropic (chỉ lưu trong trình duyệt của bạn)</label>
+  <div class="row"><input id="key" type="password" placeholder="sk-ant-..." autocomplete="off"><input id="model" value="claude-sonnet-5-5" aria-label="Model"></div>
+  <label>Ghi chú thêm cho AI (không bắt buộc)</label>
+  <input id="note" placeholder="Ví dụ: lớp 6, tiếng Anh, câu hỏi dễ, giải thích bằng tiếng Việt">
+  <p><button id="gen">✨ Tạo câu hỏi</button></p>
+  <div id="err" class="msg hide"></div>
+ </div>
+ <div id="prev" class="card hide"></div>
+</section>
+
+<section id="s-join" class="hide"></section>
+<section id="s-play" class="hide"></section>
+<section id="s-end" class="hide"></section>
+<section id="s-live" class="hide"></section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let Q=[],cfg={sec:20},board=[],cur=null,timer=null;
+const show=id=>["setup","join","play","end","live"].forEach(k=>$("s-"+k).classList.toggle("hide",k!==id));
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm=s=>String(s||"").toLowerCase().normalize("NFC").replace(/[.,!?;:"“”]/g,"").replace(/\s+/g," ").trim();
+
+$("files").onchange=()=>{$("fl").textContent=[...$("files").files].map(f=>f.name).join(", ")};
+
+async function readInputs(){
+ let text=$("txt").value.trim(),imgs=[];
+ for(const f of $("files").files){
+  if(f.name.toLowerCase().endsWith(".docx")){
+   try{const r=await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()});text+="\n"+r.value}catch(e){throw new Error("Không đọc được "+f.name)}
+  }else if(f.type.startsWith("image/"))imgs.push(f);
+ }
+ return{text,imgs};
+}
+
+$("gen").onclick=async()=>{
+ const er=$("err");er.classList.add("hide");
+ const kinds=["mc","tf","fill"].filter(k=>$("k-"+k).checked);
+ if(!kinds.length){er.textContent="Hãy chọn ít nhất một dạng câu hỏi.";er.classList.remove("hide");return}
+ $("gen").disabled=true;$("gen").textContent="Đang tạo câu hỏi…";
+ try{
+  const{text,imgs}=await readInputs();
+  if(!text&&!imgs.length)throw new Error("Hãy tải tệp hoặc nhập nội dung bài học.");
+  const sample=await claude.use("sample");
+  if(!sample)throw new Error("Chức năng AI chưa khả dụng. Hãy mở trang này trong claude.ai.");
+  const opts={};
+  if(imgs.length){const l=await sample.limits();if(!l.images)throw new Error("Chưa hỗ trợ đọc ảnh ở đây, hãy dùng tệp Word hoặc văn bản.");opts.images=imgs}
+  const n=+$("n").value||10;
+  const prompt=`Bạn là giáo viên. Dựa vào nội dung bài học (văn bản bên dưới và/hoặc ảnh đính kèm), hãy tạo đúng ${n} câu kiểm tra từ vựng và ngữ pháp, trộn các dạng: ${kinds.join(", ")}.
+Chỉ trả về MỘT mảng JSON, không thêm chữ nào khác. Mỗi phần tử:
+- trắc nghiệm: {"t":"mc","q":"câu hỏi","o":["A","B","C","D"],"a":chỉ_số_đáp_án_đúng_0-3,"e":"giải thích ngắn"}
+- đúng/sai: {"t":"tf","q":"mệnh đề","a":true hoặc false,"e":"giải thích ngắn"}
+- điền từ: {"t":"fill","q":"câu có chỗ trống ____","a":"đáp án","alt":["đáp án chấp nhận khác"],"e":"giải thích ngắn"}
+Chỉ dùng kiến thức có trong tài liệu. Đáp án phải chính xác. Ghi chú của giáo viên: ${$("note").value||"không có"}.
+NỘI DUNG:
+${text||"(xem ảnh đính kèm)"}`;
+  const r=await sample.json(prompt,opts);
+  Q=(Array.isArray(r)?r:r.questions||[]).filter(x=>x&&x.q&&["mc","tf","fill"].includes(x.t));
+  if(!Q.length)throw new Error("Không tạo được câu hỏi, hãy thử lại.");
+  cfg.sec=Math.max(5,+$("sec").value||20);
+  preview();
+ }catch(e){er.textContent=e.message||e.code||"Có lỗi xảy ra";er.classList.remove("hide")}
+ $("gen").disabled=false;$("gen").textContent="✨ Tạo câu hỏi";
+};
+
+function ansText(q){return q.t==="mc"?q.o[q.a]:q.t==="tf"?(q.a?"Đúng":"Sai"):q.a}
+function preview(){
+ const p=$("prev");p.classList.remove("hide");
+ p.innerHTML=`<h2>3. Xem lại ${Q.length} câu hỏi</h2>`+Q.map((q,i)=>`<div class="rv"><span class="tag">${{mc:"Trắc nghiệm",tf:"Đúng/Sai",fill:"Điền từ"}[q.t]}</span> <b>${i+1}. ${esc(q.q)}</b><br><span class="mu">Đáp án: ${esc(ansText(q))}</span> <button class="ghost" data-d="${i}" style="padding:2px 10px">Xóa</button></div>`).join("")+
+ `<p class="row"><button id="live">📱 Tạo phòng &amp; mã QR (cả lớp chơi cùng lúc)</button><button class="ghost" id="start">▶ Chơi trên 1 máy</button></p>`;
+ p.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{Q.splice(+b.dataset.d,1);preview()});
+ $("start").onclick=()=>{if(Q.length)join()};
+ $("live").onclick=()=>{if(Q.length)hostStart()};
+ p.scrollIntoView({behavior:"smooth"});
+}
+
+function join(){
+ const s=$("s-join");show("join");
+ s.innerHTML=`<div class="card"><h2>Người chơi tiếp theo</h2><p class="mu">${Q.length} câu · ${cfg.sec} giây/câu</p>
+ <label>Nhập tên của em</label><input id="pname" maxlength="30" placeholder="Tên học sinh">
+ <div class="row" style="margin-top:14px"><button id="go">Vào chơi</button><button class="ghost" id="lb">Xem bảng xếp hạng</button><button class="ghost" id="back">Sửa câu hỏi</button></div></div>`;
+ $("go").onclick=()=>{const nm=$("pname").value.trim();if(nm)play(nm);else $("pname").focus()};
+ $("pname").onkeydown=e=>{if(e.key==="Enter")$("go").click()};
+ $("lb").onclick=()=>{cur=null;end(true)};$("back").onclick=()=>show("setup");
+ $("pname").focus();
+}
+
+function play(name){
+ cur={name,i:0,score:0,time:0,log:[]};next();
+}
+function next(){
+ if(cur.i>=Q.length){board.push(cur);return end()}
+ const q=Q[cur.i],s=$("s-play");show("play");
+ let body="";
+ if(q.t==="mc")body=q.o.map((o,k)=>`<button class="opt" data-k="${k}">${"ABCD"[k]}. ${esc(o)}</button>`).join("");
+ else if(q.t==="tf")body=`<div class="tf"><button class="opt" data-k="1">✅ Đúng</button><button class="opt" data-k="0">❌ Sai</button></div>`;
+ else body=`<input id="fa" placeholder="Nhập đáp án…" autocomplete="off"><p><button id="sub">Trả lời</button></p>`;
+ s.innerHTML=`<div class="card"><div class="top"><b>${esc(cur.name)}</b><span>Câu ${cur.i+1}/${Q.length} · Điểm: ${cur.score}</span></div>
+ <div class="bar" id="bar"><i style="width:100%"></i></div><div class="mu" id="tm">${cfg.sec}s</div>
+ <div class="q">${esc(q.q)}</div>${body}<div id="fb"></div></div>`;
+ const t0=Date.now();let done=false;
+ const finish=(val,txt)=>{
+  if(done)return;done=true;clearInterval(timer);
+  const used=Math.min(cfg.sec,(Date.now()-t0)/1000);
+  let ok=false;
+  if(val!==null){
+   if(q.t==="mc")ok=val===q.a;else if(q.t==="tf")ok=!!val===!!q.a;
+   else ok=[q.a,...(q.alt||[])].some(x=>norm(x)===norm(txt));
+  }
+  cur.score+=ok?1:0;cur.time+=used;
+  cur.log.push({q,ok,mine:val===null?"(hết giờ)":q.t==="fill"?txt:q.t==="mc"?q.o[val]:(val?"Đúng":"Sai")});
+  s.querySelectorAll(".opt").forEach(b=>{b.disabled=true;const k=+b.dataset.k;
+   const right=q.t==="mc"?k===q.a:(k===1)===!!q.a;
+   if(right)b.classList.add("ok");else if(val!==null&&k===val)b.classList.add("no")});
+  const sub=$("sub");if(sub)sub.disabled=true;const fa=$("fa");if(fa)fa.disabled=true;
+  $("fb").innerHTML=`<div class="rv ${ok?"ok":"no"}"><b>${ok?"✅ Chính xác!":(val===null?"⏰ Hết giờ!":"❌ Chưa đúng.")}</b> Đáp án: <b>${esc(ansText(q))}</b>${q.e?`<br><span class="mu">${esc(q.e)}</span>`:""}</div><button id="nx">${cur.i+1>=Q.length?"Xem kết quả":"Câu tiếp →"}</button>`;
+  $("nx").onclick=()=>{cur.i++;next()};$("nx").focus();
+ };
+ s.querySelectorAll(".opt").forEach(b=>b.onclick=()=>finish(+b.dataset.k));
+ if(q.t==="fill"){const go=()=>finish(1,$("fa").value);$("sub").onclick=go;$("fa").onkeydown=e=>{if(e.key==="Enter")go()};$("fa").focus()}
+ timer=setInterval(()=>{
+  const left=cfg.sec-(Date.now()-t0)/1000;
+  $("bar").firstChild.style.width=Math.max(0,left/cfg.sec*100)+"%";
+  $("bar").classList.toggle("low",left<=5);$("tm").textContent=Math.max(0,Math.ceil(left))+"s";
+  if(left<=0)finish(null,"");
+ },100);
+}
+
+function ranked(){return [...board].sort((a,b)=>b.score-a.score||a.time-b.time)}
+function end(onlyBoard){
+ const s=$("s-end");show("end");
+ const medal=i=>["🥇","🥈","🥉"][i]||i+1;
+ let h="";
+ if(cur&&!onlyBoard){
+  h+=`<div class="card" style="text-align:center"><div class="mu">${esc(cur.name)}</div><div class="big">${cur.score}/${Q.length}</div><div class="mu">Tổng thời gian: ${cur.time.toFixed(1)}s</div></div>
+  <div class="card"><h2>Chi tiết từng câu</h2>`+cur.log.map((l,i)=>`<div class="rv ${l.ok?"ok":"no"}"><b>${i+1}. ${esc(l.q.q)}</b><br>${l.ok?"✅":"❌"} Em trả lời: ${esc(l.mine)}<br>Đáp án đúng: <b>${esc(ansText(l.q))}</b>${l.q.e?`<br><span class="mu">${esc(l.q.e)}</span>`:""}</div>`).join("")+`</div>`;
+ }
+ h+=`<div class="card"><h2>🏆 Bảng xếp hạng</h2>${board.length?`<table><tr><th>#</th><th>Tên</th><th>Đúng</th><th>Thời gian</th></tr>`+ranked().map((p,i)=>`<tr><td>${medal(i)}</td><td>${esc(p.name)}</td><td>${p.score}/${Q.length}</td><td>${p.time.toFixed(1)}s</td></tr>`).join("")+`</table>`:`<p class="mu">Chưa có ai chơi.</p>`}
+ <p class="mu">Xếp theo số câu đúng (cao → thấp); bằng điểm thì ai nhanh hơn xếp trên.</p></div>
+ <div class="row"><button id="again">👤 Người chơi tiếp theo</button><button class="ghost" id="csv">⬇ Tải kết quả (CSV)</button><button class="ghost" id="rs">Làm đề mới</button></div>`;
+ s.innerHTML=h;
+ $("again").onclick=join;$("rs").onclick=()=>{board=[];cur=null;show("setup")};
+ $("csv").onclick=async()=>{
+  const d=await claude.use("downloads");if(!d){alert("Không thể tải tệp ở đây.");return}
+  const rows=[["Hạng","Tên","Số câu đúng","Tổng câu","Thời gian (s)"],...ranked().map((p,i)=>[i+1,p.name,p.score,Q.length,p.time.toFixed(1)])];
+  try{await d.save({filename:"ket-qua.csv",data:"\ufeff"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n")})}catch(e){}
+ };
+ window.scrollTo(0,0);
+}
+
+/* ===== Chơi nhiều thiết bị (QR) ===== */
+/* ----- Lớp tương thích chạy độc lập (GitHub Pages) ----- */
+const b64=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(",")[1]);r.onerror=no;r.readAsDataURL(f)});
+function roomShim(){return{join:name=>new Promise((res,rej)=>{
+ const subs={},fire=(t,d)=>(subs[t]||[]).forEach(f=>f({topic:t,data:d})),on=(t,f)=>{(subs[t]=subs[t]||[]).push(f);return()=>{}},pre="vnquiz26-";
+ if(window.ROLE==="host"){
+  const conns=[],p=new Peer(pre+name);p.on("error",rej);
+  p.on("open",()=>res({emit:async(t,d)=>conns.forEach(c=>c.open&&c.send({t,d})),on,leave:async()=>p.destroy()}));
+  p.on("connection",c=>{conns.push(c);c.on("data",m=>fire(m.t,m.d))});
+ }else{
+  const p=new Peer();p.on("error",rej);
+  p.on("open",()=>{const c=p.connect(pre+name,{reliable:true});
+   c.on("open",()=>res({emit:async(t,d)=>c.send({t,d}),on,leave:async()=>p.destroy()}));
+   c.on("data",m=>fire(m.t,m.d));c.on("error",rej)});
+ }})}}
+const claude={use:async n=>{
+ if(n==="downloads")return{save:async({filename,data})=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"text/csv;charset=utf-8"}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}};
+ if(n==="room")return roomShim();
+ if(n==="sample"){
+  const f=async(p,o={})=>{
+   const key=$("key").value.trim();if(!key)throw new Error("Hãy nhập API key của Anthropic ở mục 2.");
+   const content=[];for(const im of o.images||[])content.push({type:"image",source:{type:"base64",media_type:im.type,data:await b64(im)}});
+   content.push({type:"text",text:p});
+   const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:$("model").value.trim()||"claude-sonnet-5-5",max_tokens:8000,messages:[{role:"user",content}]})});
+   const j=await r.json();if(!r.ok)throw new Error("Lỗi API: "+(j.error&&j.error.message||r.status));
+   return j.content.map(c=>c.text||"").join("");
+  };
+  f.limits=async()=>({images:true});
+  f.json=async(p,o)=>{const t=await f(p,o);return JSON.parse(t.slice(t.indexOf("["),t.lastIndexOf("]")+1))};
+  return f;
+ }
+ return null}};
+try{$("key").value=localStorage.getItem("qk")||"";$("key").oninput=()=>localStorage.setItem("qk",$("key").value)}catch(e){}
+const URLBASE=location.origin+location.pathname;
+const chk=(q,v)=>q.t==="mc"?v===q.a:q.t==="tf"?!!v===!!q.a:[q.a,...(q.alt||[])].some(x=>norm(x)===norm(v));
+const rk=o=>Object.entries(o).map(([id,p])=>({id,name:p.name,score:p.score,time:p.time})).sort((a,b)=>b.score-a.score||a.time-b.time);
+const medal=i=>["🥇","🥈","🥉"][i]||i+1;
+const tbl=(b,n)=>`<table><tr><th>#</th><th>Tên</th><th>Đúng</th><th>Thời gian</th></tr>`+b.map((p,i)=>`<tr><td>${medal(i)}</td><td>${esc(p.name)}</td><td>${p.score}/${n}</td><td>${p.time.toFixed(1)}s</td></tr>`).join("")+`</table>`;
+let R,H;
+
+async function hostStart(){window.ROLE="host";
+ const room=await claude.use("room");
+ if(!room||!room.join){alert("Phòng chơi trực tiếp chưa khả dụng. Hãy mở trang trong claude.ai.");return}
+ const code=String(1000+Math.floor(Math.random()*9000));
+ try{R=await room.join("quiz"+code)}catch(e){alert("Không tạo được phòng: "+(e.type||e.message));return}
+ H={code,players:{},phase:"lobby",i:-1,ans:{},stat:[],link:URLBASE+"#play"+code};
+ R.on("hello",m=>{const d=m.data||{};if(!d.pid)return;const p=H.players[d.pid]||(H.players[d.pid]={score:0,time:0});p.name=String(d.name||"?").slice(0,24);R.emit("sync",{to:d.pid,phase:H.phase,q:H.phase==="q"?pub():null});hr()});
+ R.on("ans",m=>{const d=m.data||{};if(H.phase!=="q"||d.i!==H.i||!H.players[d.pid]||H.ans[d.pid])return;H.ans[d.pid]={v:d.v,ms:Math.min(+d.ms||0,cfg.sec*1000)};if(Object.keys(H.ans).length>=Object.keys(H.players).length)reveal();else hr()});
+ show("live");hr();
+ setInterval(()=>{if(H&&H.phase==="q"&&$("htm")){const l=Math.max(0,cfg.sec-(Date.now()-H.t0)/1000);$("htm").textContent=Math.ceil(l)+"s";$("hbar").style.width=l/cfg.sec*100+"%"}},250);
+}
+const pub=()=>({i:H.i,n:Q.length,t:Q[H.i].t,q:Q[H.i].q,o:Q[H.i].o,sec:cfg.sec});
+function nextQ(){H.i++;H.phase="q";H.ans={};H.t0=Date.now();R.emit("q",pub());H.to=setTimeout(reveal,(cfg.sec+1.5)*1000);hr()}
+function reveal(){
+ if(H.phase!=="q")return;clearTimeout(H.to);H.phase="r";
+ const q=Q[H.i],res={};let right=0;
+ for(const id in H.players){const a=H.ans[id],ok=a?chk(q,a.v):false;res[id]=ok;const p=H.players[id];p.score+=ok?1:0;p.time+=a?a.ms/1000:cfg.sec;right+=ok?1:0}
+ H.stat[H.i]={right,total:Object.keys(H.players).length};
+ R.emit("reveal",{i:H.i,text:ansText(q),e:q.e,res,board:rk(H.players)});hr();
+}
+function finish(){H.phase="end";R.emit("end",{board:rk(H.players),n:Q.length});hr()}
+function hr(){
+ const s=$("s-live"),np=Object.keys(H.players).length,names=Object.values(H.players).map(p=>`<span>${esc(p.name)}</span>`).join("");
+ let h="";
+ if(H.phase==="lobby"){
+  const qr=qrcode(0,"M");qr.addData(H.link);qr.make();
+  h=`<div class="card ctr"><h2>Quét mã QR để tham gia</h2><div class="qr">${qr.createSvgTag({cellSize:5,margin:1,scalable:true})}</div>
+  <p class="mu">Hoặc mở liên kết và nhập mã phòng:</p><div class="code">${H.code}</div><p class="mu" style="word-break:break-all">${H.link}</p></div>
+  <div class="card"><h2>Người chơi (${np})</h2><div class="chips">${names||'<span class="mu">Đang chờ học sinh vào…</span>'}</div>
+  <p class="row"><button id="hs" ${np?"":"disabled"}>▶ Bắt đầu (${Q.length} câu · ${cfg.sec}s/câu)</button><button class="ghost" id="hx">Hủy phòng</button></p></div>`;
+ }else if(H.phase==="q"){
+  const q=Q[H.i];
+  h=`<div class="card"><div class="top"><b>Câu ${H.i+1}/${Q.length}</b><span>Đã trả lời: ${Object.keys(H.ans).length}/${np}</span></div><div class="bar"><i id="hbar" style="width:100%"></i></div><div class="mu" id="htm">${cfg.sec}s</div>
+  <div class="q">${esc(q.q)}</div>${q.t==="mc"?q.o.map((o,k)=>`<div class="opt">${"ABCD"[k]}. ${esc(o)}</div>`).join(""):q.t==="tf"?'<div class="tf"><div class="opt">✅ Đúng</div><div class="opt">❌ Sai</div></div>':'<p class="mu">Học sinh nhập đáp án trên điện thoại.</p>'}
+  <p><button class="ghost" id="hrv">Hiện đáp án ngay</button></p></div>`;
+ }else if(H.phase==="r"){
+  const q=Q[H.i],st=H.stat[H.i],last=H.i+1>=Q.length;
+  h=`<div class="card"><div class="q">${esc(q.q)}</div><div class="rv ok">Đáp án: <b>${esc(ansText(q))}</b>${q.e?`<br><span class="mu">${esc(q.e)}</span>`:""}<br>Đúng: ${st.right}/${st.total} học sinh</div></div>
+  <div class="card"><h2>🏆 Top 5</h2>${tbl(rk(H.players).slice(0,5),H.i+1)}<p><button id="hn">${last?"Xem kết quả cuối cùng":"Câu tiếp →"}</button></p></div>`;
+ }else{
+  h=`<div class="card"><h2>🏆 Bảng xếp hạng cuối cùng</h2>${tbl(rk(H.players),Q.length)}</div>
+  <div class="card"><h2>Tỉ lệ đúng từng câu</h2>${Q.map((q,i)=>`<div class="rv"><b>${i+1}. ${esc(q.q)}</b><br>Đáp án: ${esc(ansText(q))} · Đúng ${H.stat[i]?H.stat[i].right+"/"+H.stat[i].total:"-"}</div>`).join("")}</div>
+  <div class="row"><button class="ghost" id="hc">⬇ Tải kết quả (CSV)</button><button id="hx">Đóng phòng</button></div>`;
+ }
+ s.innerHTML=h;
+ const b=id=>$(id)&&($(id).onclick=null,$(id));
+ if(b("hs"))$("hs").onclick=nextQ;
+ if(b("hn"))$("hn").onclick=()=>H.i+1>=Q.length?finish():nextQ();
+ if(b("hrv"))$("hrv").onclick=reveal;
+ if(b("hx"))$("hx").onclick=()=>{clearTimeout(H.to);R.leave();R=H=null;show("setup")};
+ if(b("hc"))$("hc").onclick=async()=>{const d=await claude.use("downloads");if(!d)return;const rows=[["Hạng","Tên","Số câu đúng","Tổng câu","Thời gian (s)"],...rk(H.players).map((p,i)=>[i+1,p.name,p.score,Q.length,p.time.toFixed(1)])];try{await d.save({filename:"ket-qua.csv",data:"\ufeff"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n")})}catch(e){}};
+}
+
+/* ----- Học sinh ----- */
+async function playerMode(c){window.ROLE="player";
+ show("live");const s=$("s-live"),W=h=>{s.innerHTML=h};
+ const room=await claude.use("room");
+ if(!room||!room.join){W('<div class="card"><h2>Không kết nối được phòng</h2><p class="mu">Hãy mở liên kết trong claude.ai và đăng nhập.</p></div>');return}
+ W(`<div class="card"><h2>Phòng ${c}</h2><label>Tên của em</label><input id="pn" maxlength="24" placeholder="Họ và tên"><p><button id="pj">Vào phòng</button></p></div>`);
+ $("pn").onkeydown=e=>{if(e.key==="Enter")$("pj").click()};
+ $("pj").onclick=async()=>{
+  const name=$("pn").value.trim();if(!name)return;$("pj").disabled=true;
+  const P={pid:Math.random().toString(36).slice(2,10),name,score:0,log:[],q:null,my:null,exp:false};
+  let r;try{r=await room.join("quiz"+c)}catch(e){W('<div class="card"><h2>Không vào được phòng</h2><p class="mu">Kiểm tra mã phòng và chắc chắn giáo viên đang mở phòng, rồi tải lại trang.</p></div>');return}
+  const send=(v,t)=>{if(P.my!==null||P.exp)return;P.my=v;P.myText=t;r.emit("ans",{pid:P.pid,i:P.q.i,v,ms:Date.now()-P.t0});drawQ()};
+  const drawQ=()=>{
+   const q=P.q,lock=P.my!==null||P.exp,d=lock?"disabled":"";
+   const body=q.t==="mc"?q.o.map((o,k)=>`<button class="opt" data-k="${k}" ${d}>${"ABCD"[k]}. ${esc(o)}</button>`).join(""):q.t==="tf"?`<div class="tf"><button class="opt" data-k="1" ${d}>✅ Đúng</button><button class="opt" data-k="0" ${d}>❌ Sai</button></div>`:`<input id="fa" placeholder="Nhập đáp án…" autocomplete="off" ${d}><p><button id="sub" ${d}>Trả lời</button></p>`;
+   W(`<div class="card"><div class="top"><b>${esc(name)}</b><span>Câu ${q.i+1}/${q.n} · Đúng: ${P.score}</span></div><div class="bar"><i id="pbar" style="width:100%"></i></div><div class="mu" id="ptm"></div><div class="q">${esc(q.q)}</div>${body}<p class="mu">${P.my!==null?"Đã gửi đáp án. Chờ kết quả…":P.exp?"⏰ Hết giờ! Chờ kết quả…":""}</p></div>`);
+   s.querySelectorAll("button.opt").forEach(b=>b.onclick=()=>{const k=+b.dataset.k;send(k,q.t==="mc"?q.o[k]:(k?"Đúng":"Sai"))});
+   if($("sub")){const go=()=>send($("fa").value,$("fa").value);$("sub").onclick=go;$("fa").onkeydown=e=>{if(e.key==="Enter")go()};if(!lock)$("fa").focus()}
+  };
+  const startQ=d=>{P.q=d;P.my=null;P.exp=false;P.t0=Date.now();clearInterval(P.tk);drawQ();
+   P.tk=setInterval(()=>{const l=d.sec-(Date.now()-P.t0)/1000;if($("pbar")){$("pbar").style.width=Math.max(0,l/d.sec*100)+"%";$("ptm").textContent=Math.max(0,Math.ceil(l))+"s"}if(l<=0){clearInterval(P.tk);if(P.my===null){P.exp=true;drawQ()}}},200)};
+  r.on("q",m=>startQ(m.data));
+  r.on("sync",m=>{const d=m.data||{};if(d.to===P.pid&&d.phase==="q"&&d.q)startQ(d.q)});
+  r.on("reveal",m=>{
+   const d=m.data;clearInterval(P.tk);if(!P.q||P.q.i!==d.i)return;
+   const ok=!!d.res[P.pid],pos=d.board.findIndex(b=>b.id===P.pid)+1;
+   if(ok)P.score++;
+   P.log.push({q:P.q.q,mine:P.my===null?"(không trả lời)":P.myText,a:d.text,e:d.e,ok});
+   W(`<div class="card ctr"><div class="big">${ok?"✅":"❌"}</div><h2>${ok?"Chính xác!":P.my===null?"Hết giờ!":"Chưa đúng"}</h2><p>Đáp án: <b>${esc(d.text)}</b></p>${d.e?`<p class="mu">${esc(d.e)}</p>`:""}<p>Hạng hiện tại: <b>${pos||"-"}</b> · Điểm: <b>${P.score}</b></p><p class="mu">Chờ giáo viên chuyển câu…</p></div>`);
+  });
+  r.on("end",m=>{
+   const d=m.data,pos=d.board.findIndex(b=>b.id===P.pid),me=d.board[pos]||{score:P.score,time:0};
+   W(`<div class="card ctr"><div class="mu">${esc(name)}</div><div class="big">${medal(pos)}</div><h2>${P.score}/${d.n} câu đúng · ${me.time.toFixed(1)}s</h2></div><div class="card"><h2>🏆 Bảng xếp hạng</h2>${tbl(d.board.slice(0,10),d.n)}</div><div class="card"><h2>Chi tiết từng câu</h2>${P.log.map((l,i)=>`<div class="rv ${l.ok?"ok":"no"}"><b>${i+1}. ${esc(l.q)}</b><br>${l.ok?"✅":"❌"} Em trả lời: ${esc(l.mine)}<br>Đáp án đúng: <b>${esc(l.a)}</b>${l.e?`<br><span class="mu">${esc(l.e)}</span>`:""}</div>`).join("")}</div>`);
+  });
+  W('<div class="card ctr"><h2>✅ Đã vào phòng!</h2><p class="mu">Chờ giáo viên bắt đầu…</p></div>');
+  r.emit("hello",{pid:P.pid,name});
+ };
+}
+const mh=location.hash.match(/^#play(\d{4})$/);if(mh)playerMode(mh[1]);
+</script>
+</body>
+</html>
